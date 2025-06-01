@@ -1,0 +1,87 @@
+{% extends "layout.html" %}
+
+{% block title %}Nuovo Appuntamento - Ancora CAS{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h1 class="h2 mb-4">
+        {% if edit_mode %}
+        <i class="fas fa-edit"></i> Modifica Appuntamento
+        {% else %}
+        <i class="fas fa-calendar-plus"></i> Nuovo Appuntamento
+        {% endif %}
+    </h1>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="POST" 
+                  {% if edit_mode %}
+                  action="{{ url_for('edit_appointment', appointment_id=appointment.id) }}"
+                  {% else %}
+                  action="{{ url_for('new_appointment') }}"
+                  {% endif %}>
+                  
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="guest_id" class="form-label">Ospite *</label>
+                        <select class="form-select" id="guest_id" name="guest_id" required>
+                            <option value="">Seleziona un ospite...</option>
+                            {% for guest in all_guests %}
+                            <option value="{{ guest.id }}" {% if appointment and appointment.guest_id == guest.id %}selected{% endif %}>
+                                {{ guest.first_name }} {{ guest.last_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="title" class="form-label">Titolo appuntamento *</label>
+                        <input type="text" class="form-control" id="title" name="title" required
+                               value="{% if appointment %}{{ appointment.title }}{% endif %}">
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="appointment_date" class="form-label">Data *</label>
+                        <div>
+                            <input type="date" class="form-control" id="appointment_date" name="appointment_date" 
+                                   required placeholder="gg/mm/aaaa"
+                                  value="{% if appointment and appointment.appointment_date %}{{ appointment.appointment_date.strftime('%Y-%m-%d') }}{% endif %}">
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="appointment_time" class="form-label">Ora *</label>
+                        <input type="time" class="form-control" id="appointment_time" name="appointment_time" required
+                               value="{% if appointment and appointment.appointment_time %}{{ appointment.appointment_time.strftime('%H:%M') }}{% endif %}">
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="location" class="form-label">Luogo</label>
+                        <input type="text" class="form-control" id="location" name="location"
+                               value="{% if appointment %}{{ appointment.location }}{% endif %}">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="description" class="form-label">Descrizione</label>
+                    <textarea class="form-control" id="description" name="description" rows="4">{% if appointment %}{{ appointment.description }}{% endif %}</textarea>
+                </div>
+                
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="is_completed" name="is_completed" 
+                           {% if appointment and appointment.is_completed %}checked{% endif %}>
+                    <label class="form-check-label" for="is_completed">Appuntamento completato</label>
+                </div>
+                
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('calendar') }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Indietro
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Salva
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

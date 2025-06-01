@@ -1,0 +1,109 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-5"><i class="fas fa-calendar-alt me-2"></i>Gestione Appuntamenti</h1>
+    </div>
+</div>
+
+<!-- Statistiche Appuntamenti -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card text-center h-100">
+            <div class="card-body">
+                <h5 class="card-title">Totale Appuntamenti</h5>
+                <p class="card-text display-4">{{ stats.total }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-center bg-warning text-white h-100">
+            <div class="card-body">
+                <h5 class="card-title">In Sospeso</h5>
+                <p class="card-text display-4">{{ stats.pending }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-center bg-success text-white h-100">
+            <div class="card-body">
+                <h5 class="card-title">Completati</h5>
+                <p class="card-text display-4">{{ stats.completed }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista Appuntamenti -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Elenco Appuntamenti</h5>
+                <a href="{{ url_for('new_appointment') }}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus me-1"></i>Nuovo Appuntamento
+                </a>
+            </div>
+            <div class="card-body p-0">
+                {% if appointments %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Ora</th>
+                                <th>Ospite</th>
+                                <th>Titolo</th>
+                                <th>Luogo</th>
+                                <th>Stato</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for appointment in appointments %}
+                            <tr {% if appointment.appointment_date == today %}class="table-primary"{% elif appointment.appointment_date == tomorrow %}class="table-info"{% endif %}>
+                                <td>{{ appointment.appointment_date.strftime('%d/%m/%Y') }}</td>
+                                <td>{{ appointment.appointment_time.strftime('%H:%M') }}</td>
+                                <td>
+                                    <a href="{{ url_for('guest_detail', guest_id=appointment.guest_id) }}">
+                                        {{ appointment.guest.first_name }} {{ appointment.guest.last_name }}
+                                    </a>
+                                </td>
+                                <td>{{ appointment.title }}</td>
+                                <td>{{ appointment.location }}</td>
+                                <td>
+                                    {% if appointment.is_completed %}
+                                    <span class="badge bg-success">Completato</span>
+                                    {% else %}
+                                    <span class="badge bg-warning">In sospeso</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group">
+                                        <a href="{{ url_for('edit_appointment', appointment_id=appointment.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ url_for('complete_appointment', appointment_id=appointment.id) }}" class="btn btn-sm {% if appointment.is_completed %}btn-outline-warning{% else %}btn-outline-success{% endif %}">
+                                            <i class="fas {% if appointment.is_completed %}fa-times{% else %}fa-check{% endif %}"></i>
+                                        </a>
+                                        <a href="{{ url_for('delete_appointment', appointment_id=appointment.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Sei sicuro di voler eliminare questo appuntamento?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info m-3">
+                    Nessun appuntamento trovato.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

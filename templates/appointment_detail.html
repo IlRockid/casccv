@@ -1,0 +1,99 @@
+{% extends "layout.html" %}
+
+{% block title %}Dettaglio Appuntamento - Ancora CAS{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 mb-0">
+            <i class="fas fa-calendar-day"></i> Dettaglio Appuntamento
+        </h1>
+        <div>
+            <a href="{{ url_for('edit_appointment', appointment_id=appointment.id) }}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Modifica
+            </a>
+            <button type="button" class="btn btn-danger" onclick="confirmDelete('{{ appointment.id }}', '{{ appointment.title }}')">
+                <i class="fas fa-trash"></i> Elimina
+            </button>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">{{ appointment.title }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">Ospite:</dt>
+                        <dd class="col-sm-8">
+                            <a href="{{ url_for('guest_detail', guest_id=appointment.guest_id) }}">
+                                {{ appointment.guest.first_name }} {{ appointment.guest.last_name }}
+                            </a>
+                        </dd>
+                        
+                        <dt class="col-sm-4">Data:</dt>
+                        <dd class="col-sm-8">{{ appointment.appointment_date.strftime('%d/%m/%Y') }}</dd>
+                        
+                        <dt class="col-sm-4">Ora:</dt>
+                        <dd class="col-sm-8">{{ appointment.appointment_time.strftime('%H:%M') }}</dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">Luogo:</dt>
+                        <dd class="col-sm-8">{{ appointment.location }}</dd>
+                        
+                        <dt class="col-sm-4">Stato:</dt>
+                        <dd class="col-sm-8">
+                            {% if appointment.is_completed %}
+                            <span class="badge bg-success">Completato</span>
+                            {% else %}
+                            <span class="badge bg-warning">Da completare</span>
+                            {% endif %}
+                        </dd>
+                        
+                        <dt class="col-sm-4">Creato il:</dt>
+                        <dd class="col-sm-8">{{ appointment.created_at.strftime('%d/%m/%Y %H:%M') }}</dd>
+                    </dl>
+                </div>
+            </div>
+            
+            <hr>
+            
+            <div class="mt-3">
+                <h6>Descrizione:</h6>
+                <p class="mb-0">{{ appointment.description or 'Nessuna descrizione disponibile.' }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="d-flex justify-content-between">
+        <a href="{{ url_for('calendar') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Torna al calendario
+        </a>
+        {% if not appointment.is_completed %}
+        <form method="POST" action="{{ url_for('complete_appointment', appointment_id=appointment.id) }}">
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-check"></i> Segna come completato
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete confirmation form -->
+<form id="delete-form" method="POST" action="{{ url_for('delete_appointment', appointment_id=0) }}" style="display: none;">
+</form>
+
+<script>
+    function confirmDelete(appointmentId, appointmentTitle) {
+        if (confirm(`Sei sicuro di voler eliminare l'appuntamento "${appointmentTitle}"?`)) {
+            const form = document.getElementById('delete-form');
+            form.action = form.action.replace('0', appointmentId);
+            form.submit();
+        }
+    }
+</script>
+{% endblock %}
