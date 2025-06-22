@@ -1,0 +1,258 @@
+{% extends "layout.html" %}
+
+{% block title %}Calendario Appuntamenti - Ancora CAS{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/it.js"></script>
+<style>
+    .fc-event {
+        cursor: pointer;
+    }
+    
+    .fc-event-today {
+        background-color: var(--bs-warning);
+        border-color: var(--bs-warning);
+    }
+    
+    .fc-event-tomorrow {
+        background-color: var(--bs-info);
+        border-color: var(--bs-info);
+    }
+    
+    /* Mobile optimizations for FullCalendar */
+    @media (max-width: 768px) {
+        /* Smaller header buttons and text */
+        .fc-header-toolbar {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .fc-toolbar-chunk {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .fc-button {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            margin: 0 2px;
+        }
+        
+        .fc-button-group .fc-button {
+            border-radius: 4px;
+        }
+        
+        /* Adjust calendar title */
+        .fc-toolbar-title {
+            font-size: 1.2rem;
+            margin: 0.5rem 0;
+        }
+        
+        /* Day grid adjustments for mobile */
+        .fc-daygrid-day-number {
+            font-size: 0.8rem;
+            padding: 2px;
+        }
+        
+        .fc-daygrid-day-top {
+            flex-direction: column;
+        }
+        
+        .fc-daygrid-event {
+            font-size: 0.7rem;
+            margin-bottom: 1px;
+        }
+        
+        /* Time grid adjustments */
+        .fc-timegrid-slot-label {
+            font-size: 0.7rem;
+        }
+        
+        .fc-timegrid-event {
+            font-size: 0.7rem;
+        }
+        
+        /* Make events more touch-friendly */
+        .fc-event {
+            min-height: 20px;
+            padding: 2px 4px;
+        }
+        
+        /* Hide less important elements on very small screens */
+        @media (max-width: 480px) {
+            .fc-col-header-cell {
+                font-size: 0.7rem;
+            }
+            
+            .fc-daygrid-day-number {
+                font-size: 0.7rem;
+            }
+        }
+    }
+    
+    /* Improve modal for mobile */
+    @media (max-width: 576px) {
+        .modal-dialog {
+            margin: 10px;
+            max-width: calc(100% - 20px);
+        }
+        
+        .modal-header, .modal-body, .modal-footer {
+            padding: 15px;
+        }
+        
+        .modal-title {
+            font-size: 1.1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-column flex-md-row">
+        <h1 class="h2 mb-2 mb-md-0">
+            <i class="fas fa-calendar-alt"></i> Calendario Appuntamenti
+        </h1>
+        <a href="{{ url_for('new_appointment') }}" class="btn btn-success w-100 w-md-auto">
+            <i class="fas fa-plus"></i> Nuovo appuntamento
+        </a>
+    </div>
+    
+    <div class="card">
+        <div class="card-body">
+            <div id="calendar"></div>
+        </div>
+    </div>
+    
+    <!-- Appointment Details Modal -->
+    <div class="modal fade" id="appointmentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">Dettagli appuntamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="modalBody">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Caricamento...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Chiudi</button>
+                    <a href="#" class="btn btn-primary" id="viewButton">
+                        <i class="fas fa-eye"></i> Visualizza dettagli completi
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get the container element
+    var calendarEl = document.getElementById('calendar');
+    
+    // Initialize the calendar with mobile-responsive settings
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: window.innerWidth < 768 ? 'listWeek' : 'dayGridMonth',
+        locale: 'it',
+        height: 'auto',
+        aspectRatio: window.innerWidth < 768 ? 1.0 : 1.35,
+        headerToolbar: {
+            left: window.innerWidth < 768 ? 'prev,next' : 'prev,next today',
+            center: 'title',
+            right: window.innerWidth < 768 ? 'dayGridMonth,listWeek' : 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        footerToolbar: window.innerWidth < 768 ? {
+            center: 'today'
+        } : false,
+        dayMaxEvents: window.innerWidth < 768 ? 2 : 3,
+        moreLinkClick: 'popover',
+        eventDisplay: 'block',
+        displayEventTime: window.innerWidth >= 768,
+        events: '/get_appointments',
+        eventClick: function(info) {
+            openAppointmentModal(info.event.id);
+        },
+        // Responsive behavior on window resize
+        windowResize: function() {
+            if (window.innerWidth < 768) {
+                calendar.changeView('listWeek');
+                calendar.setOption('headerToolbar', {
+                    left: 'prev,next',
+                    center: 'title',
+                    right: 'dayGridMonth,listWeek'
+                });
+                calendar.setOption('footerToolbar', {
+                    center: 'today'
+                });
+                calendar.setOption('dayMaxEvents', 2);
+                calendar.setOption('displayEventTime', false);
+            } else {
+                calendar.changeView('dayGridMonth');
+                calendar.setOption('headerToolbar', {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                });
+                calendar.setOption('footerToolbar', false);
+                calendar.setOption('dayMaxEvents', 3);
+                calendar.setOption('displayEventTime', true);
+            }
+        }
+    });
+    
+    calendar.render();
+    
+    // Function to open appointment details modal
+    function openAppointmentModal(appointmentId) {
+        // Reset modal content
+        document.getElementById('modalBody').innerHTML = '<div class="text-center"><div class="spinner-border" role="status"><span class="visually-hidden">Caricamento...</span></div></div>';
+        
+        // Set view button URL
+        document.getElementById('viewButton').href = '/appointment/' + appointmentId;
+        
+        // Show the modal
+        var modal = new bootstrap.Modal(document.getElementById('appointmentModal'));
+        modal.show();
+        
+        // Load appointment details
+        fetch('/appointment/' + appointmentId + '/json')
+            .then(response => response.json())
+            .then(data => {
+                // Update modal with appointment details
+                var modalBody = document.getElementById('modalBody');
+                var content = `
+                    <div class="mb-3">
+                        <strong>Ospite:</strong> ${data.guest_name}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Data:</strong> ${data.date}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Ora:</strong> ${data.time}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Luogo:</strong> ${data.location}
+                    </div>
+                    <div class="mb-3">
+                        <strong>Descrizione:</strong><br>
+                        ${data.description}
+                    </div>
+                `;
+                modalBody.innerHTML = content;
+            })
+            .catch(error => {
+                document.getElementById('modalBody').innerHTML = '<div class="alert alert-danger">Errore durante il caricamento dei dettagli.</div>';
+            });
+    }
+});
+</script>
+{% endblock %}
