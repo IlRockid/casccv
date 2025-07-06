@@ -1,0 +1,228 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard - Ancora CAS{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <h1 class="h2 mb-4">Dashboard</h1>
+    
+    <!-- Stats Cards -->
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-value">{{ total_guests }}</div>
+                    <div class="stat-label">Ospiti totali</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="stat-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="stat-value">{{ expiring_permits }}</div>
+                    <div class="stat-label">Permessi in scadenza</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="stat-icon">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="stat-value">{{ today_date }}</div>
+                    <div class="stat-label">Data odierna</div>
+                    <script>
+                        // Selezioniamo più precisamente l'elemento per evitare errori
+                        const statValues = document.querySelectorAll('.stat-value');
+                        if (statValues.length > 0) {
+                            statValues[statValues.length - 1].textContent = new Date().toLocaleDateString('it-IT');
+                        }
+                    </script>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Expiring Permits Alert -->
+    {% if expiring_permits > 0 %}
+    <div class="card mb-4 expiring-permits">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-exclamation-triangle"></i>
+                Permessi di soggiorno in scadenza
+            </h5>
+        </div>
+        <div class="card-body">
+            <p>I seguenti ospiti hanno il permesso di soggiorno in scadenza nei prossimi 7 giorni:</p>
+            
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Cognome</th>
+                            <th>Nome</th>
+                            <th class="d-none d-md-table-cell">Numero permesso</th>
+                            <th class="d-none d-sm-table-cell">Scadenza</th>
+                            <th>Giorni rimasti</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for guest in expiring_list %}
+                        <tr>
+                            <td>{{ guest.last_name }}</td>
+                            <td>{{ guest.first_name }}</td>
+                            <td class="d-none d-md-table-cell">{{ guest.permit_number }}</td>
+                            <td class="d-none d-sm-table-cell">{{ guest.permit_expiry.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                {% set days = (guest.permit_expiry - today).days %}
+                                <span class="{% if days <= 3 %}text-danger{% else %}text-warning{% endif %}">
+                                    {{ days }} giorni
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('guest_detail', guest_id=guest.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Upcoming Appointments -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-calendar-check"></i>
+                Appuntamenti imminenti
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if upcoming_appointments %}
+            <div class="table-responsive">
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Ospite</th>
+                            <th>Titolo</th>
+                            <th class="d-none d-md-table-cell">Data</th>
+                            <th class="d-none d-sm-table-cell">Ora</th>
+                            <th class="d-none d-lg-table-cell">Luogo</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appointment in upcoming_appointments %}
+                        <tr class="{% if is_tomorrow(appointment.appointment_date) %}table-warning{% endif %}">
+                            <td>{{ appointment.guest.first_name }} {{ appointment.guest.last_name }}</td>
+                            <td>{{ appointment.title }}</td>
+                            <td class="d-none d-md-table-cell">{{ appointment.appointment_date.strftime('%d/%m/%Y') }}</td>
+                            <td class="d-none d-sm-table-cell">{{ appointment.appointment_time.strftime('%H:%M') }}</td>
+                            <td class="d-none d-lg-table-cell">{{ appointment.location }}</td>
+                            <td>
+                                <a href="{{ url_for('appointment_detail', appointment_id=appointment.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('edit_appointment', appointment_id=appointment.id) }}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="text-center mt-3">
+                <a href="{{ url_for('calendar') }}" class="btn btn-primary">
+                    <i class="fas fa-calendar-alt"></i> Visualizza calendario completo
+                </a>
+                <a href="{{ url_for('new_appointment') }}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Nuovo appuntamento
+                </a>
+            </div>
+            {% else %}
+            <p class="text-muted">Nessun appuntamento imminente.</p>
+            <div class="text-center mt-3">
+                <a href="{{ url_for('new_appointment') }}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Crea nuovo appuntamento
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Latest Additions -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Ultimi ospiti inseriti</h5>
+        </div>
+        <div class="card-body">
+            {% if latest_guests %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Cognome</th>
+                            <th>Nome</th>
+                            <th class="d-none d-lg-table-cell">Data di nascita</th>
+                            <th class="d-none d-md-table-cell">Età</th>
+                            <th class="d-none d-sm-table-cell">Stanza</th>
+                            <th class="d-none d-lg-table-cell">Data inserimento</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for guest in latest_guests %}
+                        <tr>
+                            <td>{{ guest.last_name }}</td>
+                            <td>{{ guest.first_name }}</td>
+                            <td class="d-none d-lg-table-cell">{{ guest.birth_date.strftime('%d/%m/%Y') }}</td>
+                            <td class="d-none d-md-table-cell">{{ calculate_age(guest.birth_date) }}</td>
+                            <td class="d-none d-sm-table-cell">{{ guest.room_number }}</td>
+                            <td class="d-none d-lg-table-cell">{{ guest.entry_date.strftime('%d/%m/%Y') }}</td>
+                            <td>
+                                <a href="{{ url_for('guest_detail', guest_id=guest.id) }}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="{{ url_for('edit_guest', guest_id=guest.id) }}" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">Nessun ospite inserito.</p>
+            {% endif %}
+            
+            <div class="text-center mt-3">
+                <a href="{{ url_for('archive') }}" class="btn btn-primary">
+                    <i class="fas fa-list"></i> Lista Ospiti
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Set current date for days calculation
+    var today = new Date();
+</script>
+{% endblock %}
